@@ -1,0 +1,52 @@
+name: SHRP CI
+on:
+  workflow_dispatch:
+  watch:
+      types: [started]
+
+env:
+  MANIFEST: "git://github.com/SHRP/platform_manifest_twrp_omni.git -b v3_9.0"
+  # Recovery Manifest URL with -b branch
+  DT_LINK: "https://github.com/rxuglr/shrp_device_samsung_grandpplte"
+  # Your Device Tree Link
+  VENDOR: "samsung"
+  # Your Device's Vendor name as in used inside DT. Example: xiaomi, samsung, asus, etc.
+  CODENAME: "grandpplte"
+  # Your Device's Codename as in used inside DT." Example: nikel, phoenix, ginkgo, etc.
+  KERNEL_LINK: ""
+  # Kernel repo link with optional -b branch. Only for building kernel from source. Ignore if using prebuilt.
+  TARGET: "recoveryimage"
+  # Set as recoveryimage (or bootimage if no recovery partition avaiable)
+  FLAVOR: "eng"
+  # eng or userdebug
+  EXTRA_CMD: ""
+  # If you want to Execute any external Command Before Compilation Starts
+  TZ: "Asia/Kolkata"
+  TOKEN: ${{ secrets.BOTTOKEN }}
+
+jobs:
+  shrpCI:
+    runs-on: ubuntu-20.04
+
+    steps:
+       - name: Cleaning Up Runner
+         uses: rokibhasansagar/slimhub_actions@main
+
+       - name: Recovery Compilation
+         uses: ElytrA8/Recovery-Compiler@production
+
+       - name: PUSH To TG
+         run: |
+              cd ${BuildPath}/out/target/product/${CODENAME}/
+              ZIP=$(echo *stable*.zip)
+              curl -F document=@$ZIP "https://api.telegram.org/bot$TOKEN/sendDocument" \
+                  -F chat_id="888223966" \
+                  -F "disable_web_page_preview=true" \
+                  -F "parse_mode=html" \
+                  -F caption=" <i> SHRP Recovery </i> for <b> '$VENDOR' '$CODENAME' </b> is Available for Testing Purposes Only | Build finished on <b> $(date) </b> | <i> #SHRP Recovery </i> "
+              ZIP=$(echo *AddonRescue*.zip)
+              curl -F document=@$ZIP "https://api.telegram.org/bot$TOKEN/sendDocument" \
+                  -F chat_id="888223966" \
+                  -F "disable_web_page_preview=true" \
+                  -F "parse_mode=html" \
+                  -F caption=" <i> SHRP AddOnRescue </i> for <b> '$VENDOR' '$CODENAME' </b> | <i> #SHRP Recovery </i> "
